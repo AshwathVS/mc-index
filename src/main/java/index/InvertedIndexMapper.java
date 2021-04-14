@@ -4,6 +4,7 @@ import index.models.CSVLineObject;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Mapper;
+import utils.RedisUtils;
 import utils.StringUtils;
 
 import java.io.IOException;
@@ -21,7 +22,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Invert
             CSVLineObject csvLineObject = CSVLineObject.parseCSVLine(content);
             String urlHash = StringUtils.getSHA256Hash(csvLineObject.getUrl());
 
-
+            RedisUtils.set(urlHash, csvLineObject.getUrl());
 
             String allWords = csvLineObject.getTitle() + " " + csvLineObject.getContent();
 
