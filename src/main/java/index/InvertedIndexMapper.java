@@ -31,7 +31,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Invert
 
             int wordIndex = 1;
             while(stringTokenizer.hasMoreTokens()) {
-                String token = stringTokenizer.nextToken();
+                String token = stringTokenizer.nextToken().toLowerCase();
 
                 if(!wordVsOccurrenceIndexList.containsKey(token)) {
                     wordVsOccurrenceIndexList.put(token, new ArrayList<>());
@@ -43,8 +43,10 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Invert
 
             Text text = new Text();
             for(Map.Entry<String, List<Integer>> wordVsOccurrence : wordVsOccurrenceIndexList.entrySet()) {
-                text.set(wordVsOccurrence.getKey());
-                context.write(text, InvertedIndexWritable.generateWriteableFromCSVObject(csvLineObject, wordVsOccurrence.getValue(), urlHash));
+                if(!StopWords.isStopWord(wordVsOccurrence.getKey())) {
+                    text.set(wordVsOccurrence.getKey());
+                    context.write(text, InvertedIndexWritable.generateWriteableFromCSVObject(csvLineObject, wordVsOccurrence.getValue(), urlHash));
+                }
             }
         }
     }

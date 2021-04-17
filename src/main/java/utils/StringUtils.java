@@ -4,7 +4,6 @@ import com.google.common.hash.Hashing;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class StringUtils {

@@ -3,12 +3,12 @@ package index;
 import index.models.CSVLineObject;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.io.WritableComparable;
+import utils.DateUtils;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -16,14 +16,7 @@ import java.util.List;
 public class InvertedIndexWritable implements WritableComparable {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
     private static final String CUSTOM_WRITABLE_DELIMITER = "@@@";
-
-    private static Date parseDate(String dateString) {
-        try {
-            return DATE_FORMAT.parse(dateString);
-        } catch (ParseException ex) {
-            return new Date(Long.MIN_VALUE);
-        }
-    }
+    private static final String PIPE = "|";
 
     private String url;
     private int domainRank;
@@ -46,12 +39,15 @@ public class InvertedIndexWritable implements WritableComparable {
 
     @Override
     public String toString() {
-        return "[" +
-                url + CUSTOM_WRITABLE_DELIMITER +
+        return url + CUSTOM_WRITABLE_DELIMITER +
                 domainRank + CUSTOM_WRITABLE_DELIMITER +
                 publishedDate + CUSTOM_WRITABLE_DELIMITER +
-                StringUtils.join(wordIndexes, ",") +
-                ']';
+                StringUtils.join(wordIndexes, "|") +
+                PIPE;
+    }
+
+    private static Date parseDate(String date) {
+        return DateUtils.parseDate(date, DATE_FORMAT);
     }
 
     @Override
