@@ -34,7 +34,7 @@ public class InvertedIndexJob extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new InvertedIndexJob(), args); // 4 minutes for indexing 140 Mb using single mapper and single reducer
+        int exitCode = ToolRunner.run(new InvertedIndexJob(), args);
         System.exit(exitCode);
     }
 }
