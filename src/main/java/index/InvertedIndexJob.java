@@ -11,6 +11,8 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 public class InvertedIndexJob extends Configured implements Tool {
+    public static final String OUTPUT_PATH_CONF_KEY = "OUTPUT_PATH";
+
     @Override
     public int run(String[] args) throws Exception {
         if (args.length != 2) {
@@ -18,6 +20,8 @@ public class InvertedIndexJob extends Configured implements Tool {
         }
 
         Configuration conf = new Configuration();
+        conf.setStrings(OUTPUT_PATH_CONF_KEY, args[1]);
+
         Job job = Job.getInstance(conf, "Inverted Index");
 
         job.setJarByClass(InvertedIndexJob.class);
@@ -26,6 +30,7 @@ public class InvertedIndexJob extends Configured implements Tool {
 
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(InvertedIndexWritable.class);
+        job.setOutputFormatClass(CustomTextOutputFormat.class);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));

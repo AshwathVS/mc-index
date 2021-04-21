@@ -3,3 +3,4 @@ output
 target
 .idea
 *.iml
+test_input
