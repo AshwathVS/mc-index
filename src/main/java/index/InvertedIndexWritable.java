@@ -15,7 +15,7 @@ import java.util.List;
 
 public class InvertedIndexWritable implements WritableComparable {
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-    private static final String CUSTOM_WRITABLE_DELIMITER = "@@@";
+    private static final String CUSTOM_WRITABLE_DELIMITER = "@";
     private static final String PIPE = "|";
 
     private String url;
@@ -68,19 +68,27 @@ public class InvertedIndexWritable implements WritableComparable {
 
     @Override
     public void write(DataOutput dataOutput) throws IOException {
-        dataOutput.writeUTF(this.url + CUSTOM_WRITABLE_DELIMITER +
-                this.publishedDate + CUSTOM_WRITABLE_DELIMITER +
-                this.domainRank + CUSTOM_WRITABLE_DELIMITER +
-                StringUtils.join(wordIndexes, ","));
+        dataOutput.writeUTF(this.url);
+        dataOutput.writeUTF(this.publishedDate);
+        dataOutput.writeInt(this.domainRank);
+        dataOutput.writeUTF(StringUtils.join(wordIndexes, ","));
+//        dataOutput.writeUTF(this.url + CUSTOM_WRITABLE_DELIMITER +
+//                this.publishedDate + CUSTOM_WRITABLE_DELIMITER +
+//                this.domainRank + CUSTOM_WRITABLE_DELIMITER +
+//                StringUtils.join(wordIndexes, ","));
     }
 
     @Override
     public void readFields(DataInput dataInput) throws IOException {
-        String inp = dataInput.readUTF();
-        String[] inpArray = inp.split(CUSTOM_WRITABLE_DELIMITER);
-        this.url = inpArray[0];
-        this.publishedDate = inpArray[1];
-        this.domainRank = Integer.parseInt(inpArray[2]);
-        this.wordIndexes = utils.StringUtils.convertIntegerListString(inpArray[3]);
+        this.url = dataInput.readUTF();
+        this.publishedDate = dataInput.readUTF();
+        this.domainRank = dataInput.readInt();
+        this.wordIndexes = utils.StringUtils.convertIntegerListString(dataInput.readUTF());
+//        String inp = dataInput.readUTF();
+//        String[] inpArray = inp.split(CUSTOM_WRITABLE_DELIMITER);
+//        this.url = inpArray[0];
+//        this.publishedDate = inpArray[1];
+//        this.domainRank = Integer.parseInt(inpArray[2]);
+//        this.wordIndexes = utils.StringUtils.convertIntegerListString(inpArray[3]);
     }
 }

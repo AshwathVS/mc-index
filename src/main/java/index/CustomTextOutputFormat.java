@@ -17,6 +17,7 @@ import utils.FileUtils;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,7 +52,7 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
 
     protected static class LineRecordWriter extends RecordWriter<Text, Text> {
         private static final String utf8 = "UTF-8";
-        private static final String WORD_TO_BYTE_DATA_FILE_PATH = "WORD_TO_BYTE_DATA";
+        private static final String WORD_TO_BYTE_DATA_FILE_PATH = "WORD_TO_BYTE_MAP";
         private static final byte[] newline;
         protected DataOutputStream out;
         private final byte[] keyValueSeparator;
@@ -116,11 +117,7 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
         }
 
         static {
-            try {
-                newline = "\n".getBytes("UTF-8");
-            } catch (UnsupportedEncodingException var1) {
-                throw new IllegalArgumentException("can't find UTF-8 encoding");
-            }
+            newline = "\n".getBytes(StandardCharsets.UTF_8);
         }
     }
 }
