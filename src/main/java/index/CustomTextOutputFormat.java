@@ -1,5 +1,6 @@
 package index;
 
+import index.models.ClearCacheRequestBody;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -12,13 +13,17 @@ import org.apache.hadoop.mapreduce.RecordWriter;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.ReflectionUtils;
+import utils.APIUtils;
 import utils.FileUtils;
+import utils.RedisUtils;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -30,6 +35,8 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
     public RecordWriter<Text, Text> getRecordWriter(TaskAttemptContext job) throws IOException {
         Configuration conf = job.getConfiguration();
         boolean isCompressed = getCompressOutput(job);
+        boolean cacheIndexOnRedis = conf.getBoolean(InvertedIndexJob.CACHE_IN_REDIS_CONF_KEY, false);
+
         String keyValueSeparator = conf.get("mapred.textoutputformat.separator", "\t");
         CompressionCodec codec = null;
         String extension = "";
@@ -44,9 +51,9 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
         FSDataOutputStream fileOut;
         fileOut = fs.create(file, false);
         if (!isCompressed) {
-            return new LineRecordWriter(fileOut, keyValueSeparator, conf.get(InvertedIndexJob.OUTPUT_PATH_CONF_KEY));
+            return new LineRecordWriter(fileOut, keyValueSeparator, conf.get(InvertedIndexJob.OUTPUT_PATH_CONF_KEY), cacheIndexOnRedis);
         } else {
-            return new LineRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)), keyValueSeparator, conf.get(InvertedIndexJob.OUTPUT_PATH_CONF_KEY));
+            return new LineRecordWriter(new DataOutputStream(codec.createOutputStream(fileOut)), keyValueSeparator, conf.get(InvertedIndexJob.OUTPUT_PATH_CONF_KEY), cacheIndexOnRedis);
         }
     }
 
@@ -58,16 +65,19 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
         private final byte[] keyValueSeparator;
         private final String outputPath;
         private final int keyValueSeparatorByteCount;
+        private final boolean cacheInRedis;
         private long totalBytesWritten = 0;
         private final Map<String, Pair<Long, Integer>> wordToByteOffsetAndLimitMapping = new HashMap<>();
+        private final List<String> keysWritten;
 
-        public LineRecordWriter(DataOutputStream out, String keyValueSeparator, String outputPath) {
+        public LineRecordWriter(DataOutputStream out, String keyValueSeparator, String outputPath, boolean cacheInRedis) {
             this.out = out;
-
+            this.cacheInRedis = cacheInRedis;
             try {
                 this.keyValueSeparator = keyValueSeparator.getBytes("UTF-8");
                 this.outputPath = outputPath;
                 this.keyValueSeparatorByteCount = this.keyValueSeparator.length;
+                this.keysWritten = new ArrayList<>();
             } catch (UnsupportedEncodingException var4) {
                 throw new IllegalArgumentException("can't find UTF-8 encoding");
             }
@@ -96,6 +106,16 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
                 if (!nullKey && !nullValue) {
                     this.out.write(this.keyValueSeparator);
                     bytesWritten += this.keyValueSeparatorByteCount;
+
+                    if(this.cacheInRedis) {
+                        String cacheKey = InvertedIndexJob.CACHED_INDEX_PREFIX + key;
+                        this.keysWritten.add(key.toString());
+                        if(RedisUtils.containsKey(cacheKey)) {
+                            RedisUtils.append(cacheKey, "," + value.toString());
+                        } else {
+                            RedisUtils.set(cacheKey, value.toString());
+                        }
+                    }
                 }
 
                 if (!nullValue) {
@@ -113,6 +133,11 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
         public synchronized void close(TaskAttemptContext context) throws IOException {
             FileUtils.writeToFile(this.outputPath + "/" + WORD_TO_BYTE_DATA_FILE_PATH, this.wordToByteOffsetAndLimitMapping);
             System.out.println("TOTAL BYTES WRITTEN: " + totalBytesWritten);
+
+            if(this.cacheInRedis && !this.keysWritten.isEmpty()) {
+                APIUtils.executeCacheClearAPI(new ClearCacheRequestBody(this.keysWritten));
+            }
+
             this.out.close();
         }
 

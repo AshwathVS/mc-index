@@ -12,4 +12,13 @@ public class RedisUtils {
     public static String get(String key) {
         return jedis.get(key);
     }
+
+    public static void append(String key, String value) {
+        jedis.append(key, value);
+    }
+
+    public static boolean containsKey(String key) {
+        return jedis.exists(key);
+    }
+
 }

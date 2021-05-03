@@ -4,3 +4,4 @@ target
 .idea
 *.iml
 test_input
+merge_index_input
