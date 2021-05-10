@@ -22,7 +22,7 @@ public class InvertedIndexMapper extends Mapper<LongWritable, Text, Text, Invert
             CSVLineObject csvLineObject = CSVLineObject.parseCSVLine(content);
             String urlHash = StringUtils.getSHA256Hash(csvLineObject.getUrl());
 
-            RedisUtils.set(urlHash, csvLineObject.getUrl());
+//            RedisUtils.set(urlHash, csvLineObject.getUrl());
 
             String allWords = csvLineObject.getTitle() + " " + csvLineObject.getContent();
 

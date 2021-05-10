@@ -38,6 +38,7 @@ public class InvertedIndexJob extends Configured implements Tool {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(InvertedIndexWritable.class);
         job.setOutputFormatClass(CustomTextOutputFormat.class);
+        job.setNumReduceTasks(2);
 
         FileInputFormat.addInputPath(job, new Path(args[0]));
         FileOutputFormat.setOutputPath(job, new Path(args[1]));
@@ -46,7 +47,34 @@ public class InvertedIndexJob extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        int exitCode = ToolRunner.run(new InvertedIndexJob(), args);
-        System.exit(exitCode);
+//        int exitCode = ToolRunner.run(new InvertedIndexJob(), args);
+//        System.exit(exitCode);
+
+        if (args.length < 2) {
+            System.out.println("Usage: <input path> <output path>");
+            System.exit(-1);
+        }
+
+        Configuration conf = new Configuration();
+        conf.setStrings(OUTPUT_PATH_CONF_KEY, args[1]);
+
+        if(args.length == 3) {
+            conf.setBoolean(CACHE_IN_REDIS_CONF_KEY, Boolean.parseBoolean(args[2]));
+        }
+
+        Job job = Job.getInstance(conf, "Inverted Index");
+
+        job.setJarByClass(InvertedIndexJob.class);
+        job.setMapperClass(InvertedIndexMapper.class);
+        job.setReducerClass(InvertedIndexReducer.class);
+
+        job.setOutputKeyClass(Text.class);
+        job.setOutputValueClass(InvertedIndexWritable.class);
+        job.setOutputFormatClass(CustomTextOutputFormat.class);
+
+        FileInputFormat.addInputPath(job, new Path(args[0]));
+        FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 }

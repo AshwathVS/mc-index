@@ -113,7 +113,7 @@ public class CustomTextOutputFormat extends FileOutputFormat<Text, Text> {
                         if(RedisUtils.containsKey(cacheKey)) {
                             RedisUtils.append(cacheKey, "," + value.toString());
                         } else {
-                            RedisUtils.set(cacheKey, value.toString());
+//                            RedisUtils.set(cacheKey, value.toString());
                         }
                     }
                 }
